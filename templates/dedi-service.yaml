@@ -1,0 +1,17 @@
+{{- if not $.Values.hostNetwork }}
+{{- range .Values.persistence.dedicatedClients }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}
+spec:
+  type: NodePort
+  selector:
+    app: {{ .name }}
+  ports:
+    - port: {{ $.Values.service.headlessService.port }}
+      protocol: UDP
+      targetPort: {{ $.Values.service.headlessService.port }}
+{{- end }}
+{{- end }}

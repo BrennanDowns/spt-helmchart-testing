@@ -1,0 +1,68 @@
+{{- if .Values.persistence.dedicatedClients }}
+{{- range .Values.persistence.dedicatedClients }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}
+  labels:
+    app: {{ .name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}
+    spec:
+      hostNetwork: {{ $.Values.hostNetwork }}
+      dnsPolicy: {{ $.Values.dnsPolicy }}
+      containers:
+        - name: {{ .name }}
+          image: {{ $.Values.fikaHeadless.repository }}:{{ $.Values.fikaHeadless.tag }}
+          imagePullPolicy: {{ $.Values.fikaHeadless.pullPolicy }}
+          ports:
+            - containerPort: {{ $.Values.service.headlessService.port }}
+              protocol: {{ $.Values.service.headlessService.protocol }}
+          env:
+            - name: PROFILE_ID
+              value: "{{ .profileId }}"
+            - name: SERVER_URL
+              value: "{{ $.Values.environment.fikaHeadless.SERVER_URL }}"
+            - name: SERVER_PORT
+              value: "{{ $.Values.environment.fikaHeadless.SERVER_PORT }}"
+            - name: ENABLE_LOG_PURGE
+              value: "{{ $.Values.environment.fikaHeadless.ENABLE_LOG_PURGE }}"
+            - name: AUTO_RESTART_ON_RAID_END
+              value: "{{ $.Values.environment.fikaHeadless.AUTO_RESTART_ON_RAID_END }}"
+          volumeMounts:
+            - name: eft-data
+              mountPath: /opt/tarkov/EscapeFromTarkov_Data
+            - name: tarkov-data
+              mountPath: /opt/tarkov
+      volumes:
+        - name: eft-data
+          hostPath:
+            path: {{ .hostPathEFT }}
+            type: Directory
+        - name: tarkov-data
+          hostPath:
+            path: {{ .hostPathTarkov }}
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}
+spec:
+  type: NodePort
+  selector:
+    app: {{ .name }}
+  ports:
+    - port: {{ $.Values.service.headlessService.port }}
+      protocol: {{ $.Values.service.headlessService.protocol }}
+      targetPort: {{ $.Values.service.headlessService.port }}
+{{- end }}
+{{- end }}

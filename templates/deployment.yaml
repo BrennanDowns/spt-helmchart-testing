@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sptFika.fullname" . }}
+  labels:
+    app: {{ include "sptFika.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "sptFika.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "sptFika.name" . }}
+        {{- with .Values.podLabels }}
+        {{ toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      hostNetwork: {{ .Values.hostNetwork }}
+      dnsPolicy: {{ .Values.dnsPolicy }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: spt-fika
+          image: "{{ .Values.sptFika.repository }}:{{ .Values.sptFika.tag }}"
+          imagePullPolicy: {{ .Values.sptFika.pullPolicy }}
+          ports:
+            - name: server
+              containerPort: {{ .Values.service.serverService.port }}
+              protocol: {{ .Values.service.serverService.protocol }}
+          env:
+            - name: UID
+              value: "{{ .Values.environment.UID }}"
+            - name: GID
+              value: "{{ .Values.environment.GID }}"
+            - name: INSTALL_FIKA
+              value: "{{ .Values.environment.INSTALL_FIKA }}"
+            - name: FIKA_VERSION
+              value: "{{ .Values.environment.FIKA_VERSION }}"
+            - name: AUTO_UPDATE_FIKA
+              value: "{{ .Values.environment.AUTO_UPDATE_FIKA }}"
+            - name: AUTO_UPDATE_SPT
+              value: "{{ .Values.environment.AUTO_UPDATE_SPT }}"
+            - name: INSTALL_OTHER_MODS
+              value: "{{ .Values.environment.INSTALL_OTHER_MODS }}"
+            - name: MOD_URLS_TO_DOWNLOAD
+              value: "{{ .Values.environment.MOD_URLS_TO_DOWNLOAD }}"
+            - name: TAKE_OWNERSHIP
+              value: "{{ .Values.environment.TAKE_OWNERSHIP }}"
+            - name: CHANGE_PERMISSIONS
+              value: "{{ .Values.environment.CHANGE_PERMISSIONS }}"
+            - name: ENABLE_PROFILE_BACKUP
+              value: "{{ .Values.environment.ENABLE_PROFILE_BACKUP }}"
+            - name: LISTEN_ALL_NETWORKS
+              value: "{{ .Values.environment.LISTEN_ALL_NETWORKS }}"
+            - name: TZ
+              value: "{{ .Values.environment.TZ }}"
+            - name: NUM_HEADLESS_PROFILES
+              value: "{{ .Values.environment.NUM_HEADLESS_PROFILES }}"
+            {{- with .Values.extraEnv }}
+            {{ toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: server
+              mountPath: /opt/server
+
+      volumes:
+        - name: server
+          hostPath:
+            path: {{ .Values.persistence.server.hostPath }}
+            type: Directory

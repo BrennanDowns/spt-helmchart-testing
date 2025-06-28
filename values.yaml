@@ -1,0 +1,90 @@
+replicaCount: 1
+
+sptFika:
+  repository: ghcr.io/zhliau/fika-spt-server-docker
+  pullPolicy: IfNotPresent
+  tag: 3.10.5
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+
+fikaHeadless:
+  repository: ghcr.io/zhliau/fika-headless-docker
+  pullPolicy: IfNotPresent
+  tag: v2.0.0
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+podAnnotations: {}
+podLabels: {}
+
+service:
+  type: NodePort
+  serverService:
+    port: 6971
+    protocol: UDP
+  headlessService:
+    port: 25565
+    protocol: UDP
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: fika.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+environment:
+  UID: "1000"               # Change if your container runs as another user
+  GID: "1000"
+  INSTALL_FIKA: "false"
+  FIKA_VERSION: "v2.4.8"
+  AUTO_UPDATE_FIKA: "false"
+  AUTO_UPDATE_SPT: "false"
+  INSTALL_OTHER_MODS: "false"
+  MOD_URLS_TO_DOWNLOAD: ""
+  TAKE_OWNERSHIP: "true"
+  CHANGE_PERMISSIONS: "true"
+  ENABLE_PROFILE_BACKUP: "false"
+  LISTEN_ALL_NETWORKS: "true"
+  TZ: "UTC"
+  NUM_HEADLESS_PROFILES: "1"   # Number of dedicated clients
+
+  fikaHeadless:
+    PROFILE_ID_1: "679889a30005899cced617bd"
+    SERVER_URL: "fika-server"
+    SERVER_PORT: "6971"
+    ENABLE_LOG_PURGE: "true"
+    AUTO_RESTART_ON_RAID_END: "true"
+
+extraEnv: []
+
+persistence:
+  server:
+    enabled: true
+    # Use hostPath volumes, templates must support this path
+    hostPath: /mnt/storage/fika-server
+    #size: 65Gi          # This is just informational here unless PVCs are created
+    accessMode: ReadWriteOnce
+
+  dedicatedClients:
+    - name: dedicated-1
+      profileId: "679889a30005899cced617bd"
+      hostPathEFT: /mnt/storage/spt_dedicateds/EFT_DATA
+      hostPathTarkov: /mnt/storage/spt_dedicateds/tarkov_dedi1
+      accessMode: ReadWriteMany
+
+users: {}  
